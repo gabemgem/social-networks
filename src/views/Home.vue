@@ -1,7 +1,7 @@
 <template>
-  <HelloWorld />
+  <WorkspaceContainer />
 </template>
 
 <script setup>
-  import HelloWorld from '@/components/HelloWorld.vue'
+  import WorkspaceContainer from '@/components/WorkspaceContainer.vue';
 </script>
