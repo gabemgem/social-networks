@@ -1,7 +1,7 @@
 <template>
-  <Workspaces />
+  <WorkspaceContainer />
 </template>
 
 <script setup>
-  import Workspaces from '@/components/Workspaces.vue';
+import WorkspaceContainer from "@/components/WorkspaceContainer.vue";
 </script>

@@ -1,18 +1,17 @@
 <template>
-    <WorkspaceContainer :workspaceId="selectedWorkspaceId"/>
-    <v-btn @click="testOutput">TestWrapper</v-btn>
+  <WorkspaceContainer :workspaceId="selectedWorkspaceId" />
+  <v-btn @click="testOutput">TestWrapper</v-btn>
 </template>
 
 <script setup>
-import WorkspaceContainer from './WorkspaceContainer.vue';
-import { useWorkspacesStore } from '@/store/workspaces';
-import { ref } from 'vue';
+import WorkspaceContainer from "./WorkspaceContainer.vue";
+import { useWorkspacesStore } from "@/store/workspaces";
+import { ref } from "vue";
 
 const store = useWorkspacesStore();
-const selectedWorkspaceId = ref('testworkspace');
+const selectedWorkspaceId = ref("testworkspace");
 
 function testOutput() {
-    console.log(store);
+  console.log(store);
 }
-
 </script>

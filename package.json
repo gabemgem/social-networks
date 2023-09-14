@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --fix --ignore-path .gitignore"
+    "lint": "eslint . --fix --ignore-path .gitignore",
+    "format": "prettier . --write"
   },
   "dependencies": {
     "@mdi/font": "7.0.96",
@@ -15,6 +16,7 @@
     "force-graph": "^1.43.4",
     "pinia": "^2.0.0",
     "roboto-fontface": "*",
+    "uuid": "^9.0.1",
     "vue": "^3.2.0",
     "vue-router": "^4.0.0",
     "vuetify": "^3.0.0",
@@ -24,6 +26,7 @@
     "@vitejs/plugin-vue": "^4.0.0",
     "eslint": "^8.37.0",
     "eslint-plugin-vue": "^9.3.0",
+    "prettier": "3.0.3",
     "sass": "^1.60.0",
     "vite": "^4.2.0",
     "vite-plugin-vuetify": "^1.0.0"
