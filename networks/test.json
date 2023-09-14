@@ -14,6 +14,11 @@
             "id": "id3",
             "name": "name3",
             "val": 3
+        },
+        {
+            "id": "id4",
+            "name": "name4",
+            "val": 4
         }
     ],
     "links": [
@@ -28,6 +33,10 @@
         {
             "source": "id3",
             "target": "id2"
+        },
+        {
+            "source": "id3",
+            "target": "id4"
         }
     ]
 }

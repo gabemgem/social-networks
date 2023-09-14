@@ -14,18 +14,11 @@
             <tr>
                 <td>Workspace Data File</td>
                 <td>
-                    <v-row>
-                        <v-col>
                     <v-file-input label="Workspace File" accept=".json" v-model="datafile"
                         hide-details="auto"
                         class="my-2"
                         variant="solo-filled">
                     </v-file-input>
-                    </v-col>
-                    <v-col cols="2">
-                    <v-btn @click="readFile" class="mt-4">Submit</v-btn>
-                    </v-col>
-                    </v-row>
                 </td>
                 <td></td>
                 <td>JSON data file with network data.</td>
@@ -95,7 +88,7 @@
         size="x-large" 
         elevated 
         color="red"
-        @click="$emit('saved', settings, data)"
+        @click="saveSettings"
     >SAVE</v-btn>
 </template>
 
@@ -103,22 +96,56 @@
 import { watch } from 'vue';
 import { ref } from 'vue';
 
-defineEmits(['saved'])
+const emit = defineEmits(['saved'])
+
+function saveSettings() {
+    for(const s in settings.value) {
+        const setting = settings.value[s];
+        if ('oldvalue' in setting) {
+            if(setting['value'] === setting['oldvalue']) {
+                setting['changed'] = false;
+            }
+            else {
+                setting['changed'] = true;
+                setting['oldvalue'] = setting['value'];
+            }
+        }
+        else {
+            if(setting['value'] === setting['default']) {
+                setting['changed'] = false;
+            }
+            else {
+                setting['changed'] = true;
+                setting['oldvalue'] = setting['value'];
+            }
+        }
+    }
+    
+    const dataChanged = (data.value !== oldData.value);
+    if(dataChanged) {
+        oldData.value = data.value;
+    }
+    emit('saved', settings.value, data.value, dataChanged);
+}
 
 const nodeprops = ref(['id','name'])
 const linkprops = ref(['source','target'])
 
 const datafile = ref(null);
 const data = ref(null);
-
-async function readFile() {
-    data.value = JSON.parse(await datafile.value[0].text());
-}
+const oldData = ref(null);
 
 function testOutput() {
     console.log(data.value);
     console.log(settings.value);
 }
+
+watch(
+    () => datafile.value,
+    async (newValue) => {
+        data.value = JSON.parse(await newValue[0].text());
+    }
+)
 
 watch(data, () => {
     nodeprops.value = Object.keys(data.value.nodes[0]) || [];
@@ -137,7 +164,7 @@ const settings = ref({
     },
     nodecolor: {
         'name': 'Node Color',
-        'value': null,
+        'value': 'color',
         'default': 'color',
         'description': 'The color of the nodes can be set to one of the node properties. If not set, the nodes will be blue.',
         'property': 'node',
@@ -145,7 +172,7 @@ const settings = ref({
     },
     nodesize: {
         'name': 'Node Size',
-        'value': null,
+        'value': 'val',
         'default': 'val',
         'description': 'Node size set from a node property. The default is the "val" property. If set, size values will be scaled between "Node Size Max" and "Node Size Min".',
         'property': 'node',
@@ -153,7 +180,7 @@ const settings = ref({
     },
     nodesizemax: {
         'name': 'Node Size Max',
-        'value': null,
+        'value': 1,
         'default': 1,
         'description': 'The maximum node size if scaling nodes using a node property.',
         'property': null,
@@ -162,7 +189,7 @@ const settings = ref({
     },
     nodesizemin: {
         'name': 'Node Size Min',
-        'value': null,
+        'value': 1,
         'default': 1,
         'description': 'The minimum node size if scaling nodes using a node property.',
         'property': null,
@@ -171,7 +198,7 @@ const settings = ref({
     },
     nodelabel: {
         'name': 'Node Label',
-        'value': null,
+        'value': 'name',
         'default': 'name',
         'description': 'Node label set from a node property.',
         'property': 'node',
@@ -179,7 +206,7 @@ const settings = ref({
     },
     linklabel: {
         'name': 'Link Label',
-        'value': null,
+        'value': 'name',
         'default': 'name',
         'description': 'Link label set from a link property.',
         'property': 'link',
@@ -187,7 +214,7 @@ const settings = ref({
     },
     linkcolor: {
         'name': 'Link Color',
-        'value': null,
+        'value': 'color',
         'default': 'color',
         'description': 'Link color set from a link property. If unset, the links will be grey.',
         'property': 'link',
@@ -203,8 +230,8 @@ const settings = ref({
     },
     linkwidthmax: {
         'name': 'Link Width Max',
-        'value': null,
-        'default': 5,
+        'value': 1,
+        'default': 1,
         'description': 'The maximum link width if scaling link widths using a link property.',
         'property': null,
         'inputType': 'v-text-field',
@@ -212,7 +239,7 @@ const settings = ref({
     },
     directionallinks: {
         'name': 'Directional Links',
-        'value': null,
+        'value': false,
         'default': false,
         'description': 'Set to true to include arrows in the network graph indicating link directionality.',
         'property': null,

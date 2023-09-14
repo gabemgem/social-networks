@@ -20,7 +20,7 @@ this will have the workspace settings/editing stuff. Settings include:
             </WorkspaceSettings>
         </v-window-item>
         
-        <v-window-item value="network"><Workspace :settings="graphSettings" :data="data" :id="workspaceId"/>
+        <v-window-item value="network"><Workspace :settings="workspaceSettings" :data="data"/>
         </v-window-item>
     </v-window>
     <v-btn @click="testOutput">TestCont</v-btn>
@@ -34,7 +34,7 @@ import { ref } from 'vue';
 
 function testOutput() {
     console.log(workspaceSettings.value);
-    console.log(graphSettings.value);
+    console.log(data.value);
 }
 
 const tab = ref(null);
@@ -42,125 +42,75 @@ const tab = ref(null);
 const workspaceId = ref('testworkspace');
 const workspaceName = ref('Test Workspace');
 
-const graphSettings = ref({
+const workspaceSettings = ref({
     workspaceid: workspaceId.value,
-    nodecolor: null,
-    nodesize: null,
-    nodelabel: null,
-    linklabel: null,
-    linkcolor: null,
-    linkwidth: null,
+    workspacename: workspaceName.value,
+    notes: null,
+    nodecolor: 'color',
+    nodesize: 'val',
+    nodesizemax: 1,
+    nodesizemin: 1,
+    nodelabel: 'name',
+    linklabel: 'name',
+    linkcolor: 'color',
+    linkwidth: 1,
+    linkwidthmax: 1,
     directionallinks: false,
-});
-const workspaceSettings = ref(null);
-
-const data = ref({
-    nodes: [],
-    links: []
+    updatetoggle: false,
 });
 
-function settingsSaved(settings, graphData) {
-    data.value = graphData;
-    workspaceSettings.value = settings;
-}
+const data = ref(null);
 
-// update graph settings
-watch(workspaceId, () => graphSettings.value.workspaceid = workspaceId.value);
-watch(
-    () => workspaceSettings.value?.nodecolor.value,
-    (newValue) => {
-        if(newValue !== '') {
-            const possibleValues = Array.from(new Set(data.value.nodes.map((n) => n[newValue])));
-            const colorMap = {};
-            for(let i=1; i<=possibleValues.size; i++) {
-                colorMap[possibleValues[i-1]] = selectColor(i);
-            }
-            data.value.nodes.forEach((n) => {
-                n[`new${newValue}`] = colorMap[n[newValue]];
-            });
-            graphSettings.value.nodecolor = `new${newValue}`;
-        }
+function settingsSaved(settings, graphData, dataChanged) {
+    if(dataChanged) {
+        data.value = graphData;
     }
-);
-watch(
-    () => workspaceSettings.value?.nodesize.value,
-    () => {
+
+    if(settings.notes.changed) {
+        workspaceSettings.value.notes = settings.notes.value;
+    }
+
+    if(settings.nodecolor.changed) {
+        workspaceSettings.value.nodecolor = settings.nodecolor.value;
+        updateNodeColor();
+    }
+
+    if(settings.nodesize.changed || settings.nodesizemax.changed || settings.nodesizemin.changed) {
+        workspaceSettings.value.nodesize = settings.nodesize.value;
+        workspaceSettings.value.nodesizemax = settings.nodesizemax.value;
+        workspaceSettings.value.nodesizemin = settings.nodesizemin.value;
         updateNodeSize();
     }
-);
-watch(
-    () => workspaceSettings.value?.nodesizemax.value,
-    () => {
-        updateNodeSize();
-    }
-);
-watch(
-    () => workspaceSettings.value?.nodesizemin.value,
-    () => {
-        updateNodeSize();
-    }
-);
-function updateNodeSize() {
-    const nodeVal = workspaceSettings.value?.nodesize.value;
-    const nodeMax = workspaceSettings.value?.nodesizemax.value;
-    const nodeMin = workspaceSettings.value?.nodesizemin.value;
-    const newRange = nodeMax-nodeMin;
 
-    const oldMax = Math.max(data.value.nodes[nodeVal]);
-    const oldMin = Math.min(data.value.nodes[nodeVal]);
-    const oldRange = oldMax-oldMin;
+    if(settings.nodelabel.changed) {
+        workspaceSettings.value.nodelabel = settings.nodelabel.value;
+    }
 
-    data.value.nodes.forEach((n) => {
-        const percent = (n[nodeVal] - oldMin) / oldRange;
-        const newVal = (percent * newRange) + nodeMin;
+    if(settings.linklabel.changed) {
+        workspaceSettings.value.linklabel = settings.linklabel.value;
+    }
 
-        n[`new${nodeVal}`] = newVal;
-    });
-    graphSettings.value.nodesize = `new${nodeVal}`;
-}
-watch(
-    () => workspaceSettings.value?.nodelabel.value,
-    (newValue) => {
-        graphSettings.value.nodelabel = newValue;
+    if(settings.linkcolor.changed) {
+        workspaceSettings.value.linkcolor = settings.linkcolor.value;
+        updateLinkColor();
     }
-);
-watch(
-    () => workspaceSettings.value?.linklabel.value,
-    (newValue) => {
-        graphSettings.value.linklabel = newValue;
-    }
-);
-watch(
-    () => workspaceSettings.value?.linkcolor.value,
-    (newValue) => {
-        if(newValue !== '') {
-            const possibleValues = Array.from(new Set(data.value.links.map((l) => l[newValue])));
-            const colorMap = {};
-            for(let i=1; i<=possibleValues.size; i++) {
-                colorMap[possibleValues[i-1]] = selectColor(i);
-            }
-            data.value.links.forEach((l) => {
-                l[`new${newValue}`] = colorMap[l[newValue]];
-            });
-            graphSettings.value.linkcolor = `new${newValue}`;
-        }
-    }
-);
-watch(
-    () => workspaceSettings.value?.linkwidth.value,
-    () => {
+
+    if(settings.linkwidth.changed || settings.linkwidthmax.changed) {
+        workspaceSettings.value.linkwidth = settings.linkwidth.value;
+        workspaceSettings.value.linkwidthmax = settings.linkwidthmax.value;
         updateLinkWidth();
     }
-);
-watch(
-    () => workspaceSettings.value?.linkwidthmax.value,
-    () => {
-        updateLinkWidth();
+
+    if(settings.directionallinks.changed) {
+        workspaceSettings.value.directionallinks = settings.directionallinks.value;
     }
-);
+
+    workspaceSettings.value.updatetoggle = !workspaceSettings.value.updatetoggle;
+}
+
 function updateLinkWidth() {
-    const linkVal = workspaceSettings.value?.linkwidth.value;
-    const linkMax = workspaceSettings.value?.linkwidthmax.value;
+    const linkVal = workspaceSettings.value.linkwidth;
+    const linkMax = workspaceSettings.value.linkwidthmax;
     const linkMin = 1;
     const newRange = linkMax-linkMin;
 
@@ -174,14 +124,141 @@ function updateLinkWidth() {
 
         l[`new${linkVal}`] = newVal;
     });
-    graphSettings.value.linkwidth = `new${linkVal}`;
+    workspaceSettings.value.linkwidth = `new${linkVal}`;
 }
-watch(
-    () => workspaceSettings.value?.directionallinks.value,
-    (newValue) => {
-        graphSettings.value.directionallinks = newValue;
+
+function updateLinkColor() {
+    const newValue = workspaceSettings.value.linkcolor;
+    if(newValue !== '') {
+        const possibleValues = Array.from(new Set(data.value.links.map((l) => l[newValue])));
+        const colorMap = {};
+        for(let i=1; i<=possibleValues.length; i++) {
+            colorMap[possibleValues[i-1]] = selectColor(i);
+        }
+        data.value.links.forEach((l) => {
+            l[`new${newValue}`] = colorMap[l[newValue]];
+        });
+        workspaceSettings.value.linkcolor = `new${newValue}`;
     }
-);
+}
+
+function updateNodeColor() {
+    const newValue = workspaceSettings.value.nodecolor;
+    if(newValue !== '') {
+        const possibleValues = Array.from(new Set(data.value.nodes.map((n) => n[newValue])));
+        const colorMap = {};
+        for(let i=1; i<=possibleValues.length; i++) {
+            colorMap[possibleValues[i-1]] = selectColor(i);
+        }
+        data.value.nodes.forEach((n) => {
+            n[`new${newValue}`] = colorMap[n[newValue]];
+        });
+        workspaceSettings.value.nodecolor = `new${newValue}`;
+    }
+}
+
+function updateNodeSize() {
+    const nodeVal = workspaceSettings.value.nodesize;
+    const nodeMax = workspaceSettings.value.nodesizemax;
+    const nodeMin = workspaceSettings.value.nodesizemin;
+    const newRange = nodeMax-nodeMin;
+
+    const oldMax = Math.max(data.value.nodes[nodeVal]);
+    const oldMin = Math.min(data.value.nodes[nodeVal]);
+    const oldRange = oldMax-oldMin;
+
+    data.value.nodes.forEach((n) => {
+        const percent = (n[nodeVal] - oldMin) / oldRange;
+        const newVal = (percent * newRange) + nodeMin;
+
+        n[`new${nodeVal}`] = newVal;
+    });
+    workspaceSettings.value.nodesize = `new${nodeVal}`;
+}
+
+// update graph settings
+// watch(
+//     () => workspaceSettings.value?.nodecolor.value,
+//     (newValue) => {
+//         if(newValue !== '') {
+//             const possibleValues = Array.from(new Set(data.value.nodes.map((n) => n[newValue])));
+//             const colorMap = {};
+//             for(let i=1; i<=possibleValues.size; i++) {
+//                 colorMap[possibleValues[i-1]] = selectColor(i);
+//             }
+//             data.value.nodes.forEach((n) => {
+//                 n[`new${newValue}`] = colorMap[n[newValue]];
+//             });
+//             graphSettings.value.nodecolor = `new${newValue}`;
+//         }
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.nodesize.value,
+//     () => {
+//         updateNodeSize();
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.nodesizemax.value,
+//     () => {
+//         updateNodeSize();
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.nodesizemin.value,
+//     () => {
+//         updateNodeSize();
+//     }
+// );
+
+// watch(
+//     () => workspaceSettings.value?.nodelabel.value,
+//     (newValue) => {
+//         graphSettings.value.nodelabel = newValue;
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.linklabel.value,
+//     (newValue) => {
+//         graphSettings.value.linklabel = newValue;
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.linkcolor.value,
+//     (newValue) => {
+//         if(newValue !== '') {
+//             const possibleValues = Array.from(new Set(data.value.links.map((l) => l[newValue])));
+//             const colorMap = {};
+//             for(let i=1; i<=possibleValues.size; i++) {
+//                 colorMap[possibleValues[i-1]] = selectColor(i);
+//             }
+//             data.value.links.forEach((l) => {
+//                 l[`new${newValue}`] = colorMap[l[newValue]];
+//             });
+//             graphSettings.value.linkcolor = `new${newValue}`;
+//         }
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.linkwidth.value,
+//     () => {
+//         updateLinkWidth();
+//     }
+// );
+// watch(
+//     () => workspaceSettings.value?.linkwidthmax.value,
+//     () => {
+//         updateLinkWidth();
+//     }
+// );
+
+// watch(
+//     () => workspaceSettings.value?.directionallinks.value,
+//     (newValue) => {
+//         graphSettings.value.directionallinks = newValue;
+//     }
+// );
 
 
 function selectColor(number) {

@@ -3,7 +3,7 @@ just contains a network graph that is formatted according to settings from
 the workspace container. -->
 
 <template>
-    <div :id="props.id">second hello world</div>
+    <div :id="`${props.settings.workspaceid}-network`">second hello world</div>
     <v-btn @click="testOutput">TestNet</v-btn>
 </template>
 
@@ -13,10 +13,19 @@ import ForceGraph from 'force-graph'
 import { onMounted } from 'vue';
 import { watch } from 'vue';
 
-const props = defineProps(['settings','data','id']);
+const props = defineProps(['settings','data']);
+
+watch(
+    () => props.settings.updatetoggle,
+    () => {
+        console.log('graph settings updated');
+        updateGraph();
+    }
+)
 
 function testOutput() {
     console.log(props);
+    updateGraph();
 }
 
 const tempdata = ref({
@@ -53,10 +62,26 @@ const tempdata = ref({
     ]
 });
 
-const graph = ref(null)
+const graph = ref(null);
+
+function updateGraph() {
+    
+    graph.value
+        .nodeVal(props.settings.nodesize)
+        .nodeColor(props.settings.nodecolor)
+        .nodeLabel(props.settings.nodelabel)
+        .linkLabel(props.settings.linklabel)
+        .linkColor(props.settings.linkcolor)
+        .linkWidth(props.settings.linkwidth)
+        .linkDirectionalArrowLength(props.settings.directionallinks ? 4 : 0)
+        .graphData(props.data)
+        .d3ReheatSimulation();
+
+    console.log('finished updating graph supposedly');
+}
 
 function setupGraph() {
-    const graphElement = document.getElementById(props.id);
+    const graphElement = document.getElementById(`${props.settings.workspaceid}-network`);
 
     graph.value = ForceGraph()(graphElement)
         .nodeVal(props.settings?.nodesize || 'val')
@@ -66,7 +91,7 @@ function setupGraph() {
         .linkColor(props.settings?.linkcolor || 'color')
         .linkWidth(props.settings?.linkwidth || 1)
         .linkDirectionalArrowLength(props.settings?.directionallinks ? 4 : 0)
-        .graphData(tempdata.value);
+        .graphData(props.data ? props.data : tempdata.value);
 
 }
 
