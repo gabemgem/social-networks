@@ -8,11 +8,15 @@ this will have the workspace settings/editing stuff. Settings include:
 
 <template>
     <v-tabs v-model="tab">
+        <v-tab value="overview">Overview</v-tab>
         <v-tab value="settings">Settings</v-tab>
         <v-tab value="network">Network</v-tab>
     </v-tabs>
 
     <v-window v-model="tab">
+        <v-window-item value="overview">
+            <WorkspaceOverview :settings="workspaceSettings" :data="data" />
+        </v-window-item>
         <v-window-item value="settings">
             <WorkspaceSettings
                 @saved="settingsSaved"
@@ -31,6 +35,32 @@ import { watch } from 'vue';
 import Workspace from './Workspace.vue';
 import WorkspaceSettings from './WorkspaceSettings.vue';
 import { ref } from 'vue';
+import { useLocalStorage } from '@vueuse/core';
+import { onMounted } from 'vue';
+import { useWorkspacesStore } from '@/store/workspaces';
+import WorkspaceOverview from './WorkspaceOverview.vue';
+
+const props = defineProps(['workspaceId']);
+
+onMounted(() => {
+    loadWorkspace();
+    cleanSavedData();
+});
+
+const store = useWorkspacesStore();
+
+function saveWorkspace() {
+    store.workspaces[props.workspaceId] = {
+        settings: workspaceSettings.value,
+        data: data.value,
+    }
+}
+function loadWorkspace() {
+    const initialWorkspaceValues = store.getWorkspace(props.workspaceId);
+    workspaceName.value = initialWorkspaceValues.settings.workspacename;
+    workspaceSettings.value = initialWorkspaceValues.settings;
+    data.value = initialWorkspaceValues.data;
+}
 
 function testOutput() {
     console.log(workspaceSettings.value);
@@ -39,11 +69,10 @@ function testOutput() {
 
 const tab = ref(null);
 
-const workspaceId = ref('testworkspace');
 const workspaceName = ref('Test Workspace');
 
 const workspaceSettings = ref({
-    workspaceid: workspaceId.value,
+    workspaceid: props.workspaceId.value,
     workspacename: workspaceName.value,
     notes: null,
     nodecolor: 'color',
@@ -60,6 +89,15 @@ const workspaceSettings = ref({
 });
 
 const data = ref(null);
+
+function cleanSavedData() {
+    if(data.value && data.value.links) {
+        data.value.links.forEach((l) => {
+            l.source = l.source.id || l.source;
+            l.target = l.target.id || l.target;
+        });
+    }
+}
 
 function settingsSaved(settings, graphData, dataChanged) {
     if(dataChanged) {
@@ -105,6 +143,7 @@ function settingsSaved(settings, graphData, dataChanged) {
         workspaceSettings.value.directionallinks = settings.directionallinks.value;
     }
 
+    saveWorkspace();
     workspaceSettings.value.updatetoggle = !workspaceSettings.value.updatetoggle;
 }
 
@@ -175,91 +214,6 @@ function updateNodeSize() {
     });
     workspaceSettings.value.nodesize = `new${nodeVal}`;
 }
-
-// update graph settings
-// watch(
-//     () => workspaceSettings.value?.nodecolor.value,
-//     (newValue) => {
-//         if(newValue !== '') {
-//             const possibleValues = Array.from(new Set(data.value.nodes.map((n) => n[newValue])));
-//             const colorMap = {};
-//             for(let i=1; i<=possibleValues.size; i++) {
-//                 colorMap[possibleValues[i-1]] = selectColor(i);
-//             }
-//             data.value.nodes.forEach((n) => {
-//                 n[`new${newValue}`] = colorMap[n[newValue]];
-//             });
-//             graphSettings.value.nodecolor = `new${newValue}`;
-//         }
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.nodesize.value,
-//     () => {
-//         updateNodeSize();
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.nodesizemax.value,
-//     () => {
-//         updateNodeSize();
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.nodesizemin.value,
-//     () => {
-//         updateNodeSize();
-//     }
-// );
-
-// watch(
-//     () => workspaceSettings.value?.nodelabel.value,
-//     (newValue) => {
-//         graphSettings.value.nodelabel = newValue;
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.linklabel.value,
-//     (newValue) => {
-//         graphSettings.value.linklabel = newValue;
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.linkcolor.value,
-//     (newValue) => {
-//         if(newValue !== '') {
-//             const possibleValues = Array.from(new Set(data.value.links.map((l) => l[newValue])));
-//             const colorMap = {};
-//             for(let i=1; i<=possibleValues.size; i++) {
-//                 colorMap[possibleValues[i-1]] = selectColor(i);
-//             }
-//             data.value.links.forEach((l) => {
-//                 l[`new${newValue}`] = colorMap[l[newValue]];
-//             });
-//             graphSettings.value.linkcolor = `new${newValue}`;
-//         }
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.linkwidth.value,
-//     () => {
-//         updateLinkWidth();
-//     }
-// );
-// watch(
-//     () => workspaceSettings.value?.linkwidthmax.value,
-//     () => {
-//         updateLinkWidth();
-//     }
-// );
-
-// watch(
-//     () => workspaceSettings.value?.directionallinks.value,
-//     (newValue) => {
-//         graphSettings.value.directionallinks = newValue;
-//     }
-// );
-
 
 function selectColor(number) {
     const hue = number * 137.508; // golden angle approximation
