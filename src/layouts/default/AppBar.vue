@@ -13,7 +13,7 @@
         v-for="workspace in store.workspaceNames"
         :key="workspace.workspaceid"
         :title="workspace.workspacename"
-        @click="store.setSelectedWorkspace(workspace.workspaceid)"
+        @click="changeWorkspace(workspace.workspaceid)"
       ></v-list-item>
     </v-list>
   </v-navigation-drawer>
@@ -54,6 +54,11 @@ function createNewWorkspace() {
   const newWorkspaceId = store.createNewWorkspace(newWorkspaceName.value);
   cancelCreateNewWorkspace();
   store.setSelectedWorkspace(newWorkspaceId);
+}
+
+function changeWorkspace(id) {
+  store.setSelectedWorkspace(id);
+  drawer.value = false;
 }
 
 const items = [
